@@ -6,7 +6,7 @@ const port = process.env.PORT || 5000;
 const app = express();
 
 // middleware
-app.use(express());
+app.use(express.json());
 app.use(cors());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.uv360.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -24,6 +24,18 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
+
+    const foodCollection = client.db("foodDB").collection("food");
+
+
+
+    // save food data in db
+    app.post("/addFood", async (req, res) => {
+      const foodData = req.body;
+      const result = await foodCollection.insertOne(foodData);
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
@@ -31,7 +43,7 @@ async function run() {
     );
   } finally {
     // Ensures that the client will close when you finish/error
-    await client.close();
+    // await client.close();
   }
 }
 run().catch(console.dir);
