@@ -50,6 +50,29 @@ async function run() {
       res.send(result);
     });
 
+    // update food data
+    app.put("/product/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updatedProduct = req.body;
+      const product = {
+        $set: {
+          food: updatedProduct.food,
+          image: updatedProduct.image,
+          category: updatedProduct.category,
+          quantity: updatedProduct.quantity,
+          price: updatedProduct.price,
+          origin: updatedProduct.origin,
+          description: updatedProduct.description,
+          ingredients: updatedProduct.ingredients,
+          making: updatedProduct.making,
+        },
+      };
+      const result = await foodCollection.updateOne(filter, product, options);
+      res.send(result);
+    });
+
     // save food data in db
     app.post("/addFood", async (req, res) => {
       const foodData = req.body;
