@@ -1,5 +1,5 @@
 const express = require("express");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const cors = require("cors");
 require("dotenv").config();
 const port = process.env.PORT || 5000;
@@ -27,7 +27,28 @@ async function run() {
 
     const foodCollection = client.db("foodDB").collection("food");
 
+    // get all foods
+    app.get("/allFoods", async (req, res) => {
+      const result = await foodCollection.find().toArray();
+      res.send(result);
+    });
 
+    // get a single food data by id from db
+    app.get("/allFoods/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await foodCollection.findOne(query);
+      res.send(result);
+    });
+
+    // get all foods data by a specific user
+    app.get("/allFoods-ByEmail/:email", async (req, res) => {
+      const email = req.params.email;
+      const filter = { "addBy.email": email };
+      const result = await foodCollection.find(filter).toArray();
+      console.log(result);
+      res.send(result);
+    });
 
     // save food data in db
     app.post("/addFood", async (req, res) => {
