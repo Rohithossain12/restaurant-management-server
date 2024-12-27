@@ -51,25 +51,25 @@ async function run() {
     });
 
     // update food data
-    app.put("/product/:id", async (req, res) => {
+    app.put("/updateFood/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const options = { upsert: true };
-      const updatedProduct = req.body;
-      const product = {
+      const updatedFood = req.body;
+      const food = {
         $set: {
-          food: updatedProduct.food,
-          image: updatedProduct.image,
-          category: updatedProduct.category,
-          quantity: updatedProduct.quantity,
-          price: updatedProduct.price,
-          origin: updatedProduct.origin,
-          description: updatedProduct.description,
-          ingredients: updatedProduct.ingredients,
-          making: updatedProduct.making,
+          food: updatedFood.food,
+          image: updatedFood.image,
+          category: updatedFood.category,
+          quantity: updatedFood.quantity,
+          price: updatedFood.price,
+          origin: updatedFood.origin,
+          description: updatedFood.description,
+          ingredients: updatedFood.ingredients,
+          making: updatedFood.making,
         },
       };
-      const result = await foodCollection.updateOne(filter, product, options);
+      const result = await foodCollection.updateOne(filter, food, options);
       res.send(result);
     });
 
@@ -77,6 +77,20 @@ async function run() {
     app.post("/addFood", async (req, res) => {
       const foodData = req.body;
       const result = await foodCollection.insertOne(foodData);
+      res.send(result);
+    });
+
+    //  // get all foods
+
+    app.get("/allFood", async (req, res) => {
+      const search = req.query.search;
+      let query = {
+        food: {
+          $regex: search,
+          $options: "i",
+        },
+      };
+      const result = await foodCollection.find(query).toArray();
       res.send(result);
     });
 
