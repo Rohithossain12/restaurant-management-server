@@ -91,7 +91,7 @@ async function run() {
       res.send(result);
     });
 
-    // purchase by specific user 
+    // purchase by specific user
     app.get("/addPurchase", async (req, res) => {
       const email = req.query.email;
       const result = await purchaseCollection
@@ -124,8 +124,16 @@ async function run() {
       });
     });
 
-    // // delete food data my orders
-    // app.delete('')
+    // delete food data my orders
+    app.delete("/addPurchase/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await purchaseCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      if (result.deletedCount === 1) {
+        res.send({ success: true, message: "Order deleted successfully." });
+      }
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
