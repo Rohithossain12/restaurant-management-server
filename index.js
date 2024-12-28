@@ -91,9 +91,12 @@ async function run() {
       res.send(result);
     });
 
-    // Save a purchase in the database
+    // purchase by specific user 
     app.get("/addPurchase", async (req, res) => {
-      const result = await purchaseCollection.find().toArray();
+      const email = req.query.email;
+      const result = await purchaseCollection
+        .find({ buyerEmail: email })
+        .toArray();
       res.send(result);
     });
 
@@ -120,6 +123,9 @@ async function run() {
         foodResult,
       });
     });
+
+    // // delete food data my orders
+    // app.delete('')
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
