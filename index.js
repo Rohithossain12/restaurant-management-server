@@ -26,6 +26,7 @@ async function run() {
     await client.connect();
 
     const foodCollection = client.db("foodDB").collection("food");
+    const purchaseCollection = client.db("foodDB").collection("purchases");
 
     // get all foods
     app.get("/allFoods", async (req, res) => {
@@ -80,18 +81,45 @@ async function run() {
       res.send(result);
     });
 
-    //  // get all foods
-
+    // get all foods
     app.get("/allFood", async (req, res) => {
-      const search = req.query.search;
-      let query = {
-        food: {
-          $regex: search,
-          $options: "i",
-        },
-      };
+      const search = req.query.search || "";
+      const query = search.trim()
+        ? { food: { $regex: search, $options: "i" } }
+        : {};
       const result = await foodCollection.find(query).toArray();
       res.send(result);
+    });
+
+    // Save a purchase in the database
+    app.get("/addPurchase", async (req, res) => {
+      const result = await purchaseCollection.find().toArray();
+      res.send(result);
+    });
+
+    // add purchase related api
+    app.post("/addPurchase", async (req, res) => {
+      const purchaseData = req.body;
+      const purchaseResult = await purchaseCollection.insertOne(purchaseData);
+
+      if (food?.addBy?.email === purchaseData.buyerEmail) {
+        return res.status(400).send({
+          success: false,
+          message: "You cannot purchase your own food item.",
+        });
+      }
+
+      const foodId = new ObjectId(purchaseData.foodId);
+      const foodResult = await foodCollection.updateOne(
+        { _id: foodId },
+        { $inc: { purchaseCount: 1 } }
+      );
+      res.send({
+        success: true,
+        message: "Purchase completed successfully",
+        purchaseResult,
+        foodResult,
+      });
     });
 
     // Send a ping to confirm a successful connection
