@@ -104,6 +104,8 @@ async function run() {
     app.post("/addPurchase", async (req, res) => {
       const purchaseData = req.body;
       const foodId = new ObjectId(purchaseData.foodId);
+      const purchasedQuantity = purchaseData.quantity;
+
       const food = await foodCollection.findOne({ _id: foodId });
       if (food?.addBy?.email === purchaseData.buyerEmail) {
         return res.status(400).send({
@@ -111,16 +113,25 @@ async function run() {
           message: "You cannot purchase your own food item.",
         });
       }
-      const purchaseResult = await purchaseCollection.insertOne(purchaseData);
+      // update the food quantity in the database by subtracting the purchased quantity
+      const updatedFood = await foodCollection.updateOne(
+        { _id: foodId },
+        { $inc: { quantity: -purchasedQuantity } }
+      );
+
       const foodResult = await foodCollection.updateOne(
         { _id: foodId },
         { $inc: { purchaseCount: 1 } }
       );
+
+      const purchaseResult = await purchaseCollection.insertOne(purchaseData);
+
       res.send({
         success: true,
         message: "Purchase completed successfully",
         purchaseResult,
         foodResult,
+        updatedFood,
       });
     });
 
