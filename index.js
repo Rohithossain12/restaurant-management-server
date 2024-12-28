@@ -100,16 +100,15 @@ async function run() {
     // add purchase related api
     app.post("/addPurchase", async (req, res) => {
       const purchaseData = req.body;
-      const purchaseResult = await purchaseCollection.insertOne(purchaseData);
-
+      const foodId = new ObjectId(purchaseData.foodId);
+      const food = await foodCollection.findOne({ _id: foodId });
       if (food?.addBy?.email === purchaseData.buyerEmail) {
         return res.status(400).send({
           success: false,
           message: "You cannot purchase your own food item.",
         });
       }
-
-      const foodId = new ObjectId(purchaseData.foodId);
+      const purchaseResult = await purchaseCollection.insertOne(purchaseData);
       const foodResult = await foodCollection.updateOne(
         { _id: foodId },
         { $inc: { purchaseCount: 1 } }
