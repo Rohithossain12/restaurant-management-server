@@ -28,6 +28,16 @@ async function run() {
     const foodCollection = client.db("foodDB").collection("food");
     const purchaseCollection = client.db("foodDB").collection("purchases");
 
+    // get all food items
+    app.get("/foodItems", async (req, res) => {
+      const result = await foodCollection
+        .find()
+        .limit(6)
+        .sort({ purchaseCount: -1 })
+        .toArray();
+      res.send(result);
+    });
+
     // get all foods
     app.get("/allFoods", async (req, res) => {
       const result = await foodCollection.find().toArray();
@@ -103,26 +113,34 @@ async function run() {
     // add purchase related api
     app.post("/addPurchase", async (req, res) => {
       const purchaseData = req.body;
-      const foodId = new ObjectId(purchaseData.foodId);
+      const foodId = purchaseData.foodId;
       const purchasedQuantity = purchaseData.quantity;
-
       const food = await foodCollection.findOne({ _id: foodId });
+
       if (food?.addBy?.email === purchaseData.buyerEmail) {
         return res.status(400).send({
           success: false,
           message: "You cannot purchase your own food item.",
         });
       }
-      // update the food quantity in the database by subtracting the purchased quantity
+
+      // update the food quantity and purchase count
       const updatedFood = await foodCollection.updateOne(
-        { _id: foodId },
-        { $inc: { quantity: -purchasedQuantity } }
+        { _id: new ObjectId(foodId) },
+        {
+          $inc: {
+            quantity: -purchasedQuantity,
+            purchaseCount: purchasedQuantity,
+          },
+        }
       );
 
-      const foodResult = await foodCollection.updateOne(
-        { _id: foodId },
-        { $inc: { purchaseCount: 1 } }
-      );
+      if (updatedFood.modifiedCount === 0) {
+        return res.status(500).send({
+          success: false,
+          message: "Failed to update food item.",
+        });
+      }
 
       const purchaseResult = await purchaseCollection.insertOne(purchaseData);
 
@@ -130,7 +148,6 @@ async function run() {
         success: true,
         message: "Purchase completed successfully",
         purchaseResult,
-        foodResult,
         updatedFood,
       });
     });
