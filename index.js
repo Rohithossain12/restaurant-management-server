@@ -17,6 +17,22 @@ app.use(
 );
 app.use(cookieParser());
 
+// verify token
+const verifyToken = (req, res, next) => {
+  const token = req.cookies?.token;
+  if (!token) {
+    return res.status(401).send({ message: "Unauthorized Access" });
+  }
+  // verify the token
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ message: "Unauthorized Access" });
+    }
+    req.user = decoded;
+    next();
+  });
+};
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.uv360.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -48,6 +64,16 @@ async function run() {
         .send({ success: true });
     });
 
+    // clear token related api
+    app.post("/logout", (req, res) => {
+      res
+        .clearCookie("token", {
+          httpOnly: true,
+          secure: false,
+        })
+        .send({ success: true });
+    });
+
     // get all food items
     app.get("/foodItems", async (req, res) => {
       const result = await foodCollection
@@ -73,18 +99,37 @@ async function run() {
     });
 
     // get all foods data by a specific user
-    app.get("/allFoods-ByEmail/:email", async (req, res) => {
-      const email = req.params.email;
+    app.get("/allFoods-ByEmail/:email", verifyToken, async (req, res) => {
+      const email = req?.params?.email;
+      const userEmail = req?.user?.email; // From token
+      // Ensure the email in the token matches the requested email
+      if (!email || userEmail !== email) {
+        return res.status(403).send({
+          message: "Forbidden: Email mismatch or unauthorized access.",
+        });
+      }
       const filter = { "addBy.email": email };
       const result = await foodCollection.find(filter).toArray();
-      console.log(result);
       res.send(result);
     });
 
     // update food data
-    app.put("/updateFood/:id", async (req, res) => {
-      const id = req.params.id;
+    app.put("/updateFood/:id", verifyToken, async (req, res) => {
+      const id = req?.params?.id;
+      const userEmail = req?.user?.email; // From token
       const filter = { _id: new ObjectId(id) };
+      // Ensure the user updating the food is the one who added it
+      const existingFood = await foodCollection.findOne(filter);
+      if (!existingFood) {
+        return res.status(404).send({ message: "Food item not found." });
+      }
+
+      if (existingFood.addBy?.email !== userEmail) {
+        return res.status(403).send({
+          message:
+            "Forbidden: You are not authorized to update this food item.",
+        });
+      }
       const options = { upsert: true };
       const updatedFood = req.body;
       const food = {
@@ -105,10 +150,28 @@ async function run() {
     });
 
     // save food data in db
-    app.post("/addFood", async (req, res) => {
-      const foodData = req.body;
-      const result = await foodCollection.insertOne(foodData);
-      res.send(result);
+    app.post("/addFood", verifyToken, async (req, res) => {
+      try {
+        const foodData = req.body;
+        // Validate the user adding the food
+        const userEmail = req?.user?.email;
+        const foodDataEmail = foodData?.addBy?.email;
+        if (userEmail === foodDataEmail && !userEmail) {
+          return res
+            .status(403)
+            .send({ message: "Forbidden: Invalid or missing user email." });
+        }
+        foodData.addBy = {
+          email: req.user.email,
+          name: req.user.name || "Unknown",
+        };
+        const result = await foodCollection.insertOne(foodData);
+        res.send(result);
+      } catch (error) {
+        res
+          .status(500)
+          .send({ message: "An error occurred while saving food data." });
+      }
     });
 
     // get all foods
@@ -175,6 +238,7 @@ async function run() {
     // delete food data my orders
     app.delete("/addPurchase/:id", async (req, res) => {
       const id = req.params.id;
+
       const result = await purchaseCollection.deleteOne({
         _id: new ObjectId(id),
       });
