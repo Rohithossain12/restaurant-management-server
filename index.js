@@ -92,7 +92,7 @@ async function run() {
 
     // get a single food data by id from db
     app.get("/allFoods/:id", async (req, res) => {
-      const id = req.params.id;
+      const id = req?.params?.id;
       const query = { _id: new ObjectId(id) };
       const result = await foodCollection.findOne(query);
       res.send(result);
@@ -131,7 +131,7 @@ async function run() {
         });
       }
       const options = { upsert: true };
-      const updatedFood = req.body;
+      const updatedFood = req?.body;
       const food = {
         $set: {
           food: updatedFood.food,
@@ -176,7 +176,7 @@ async function run() {
 
     // get all foods
     app.get("/allFood", async (req, res) => {
-      const search = req.query.search || "";
+      const search = req?.query?.search || "";
       const query = search.trim()
         ? { food: { $regex: search, $options: "i" } }
         : {};
@@ -185,8 +185,8 @@ async function run() {
     });
 
     // purchase by specific user
-    app.get("/addPurchase", async (req, res) => {
-      const email = req.query.email;
+    app.get("/addPurchase", verifyToken, async (req, res) => {
+      const email = req?.query?.email;
       const result = await purchaseCollection
         .find({ buyerEmail: email })
         .toArray();
@@ -194,10 +194,14 @@ async function run() {
     });
 
     // add purchase related api
-    app.post("/addPurchase", async (req, res) => {
-      const purchaseData = req.body;
+    app.post("/addPurchase", verifyToken, async (req, res) => {
+      const purchaseData = req?.body;
       const foodId = purchaseData.foodId;
       const purchasedQuantity = purchaseData.quantity;
+
+      const buyerEmail = req?.user?.email; // Get email from the verified token
+      purchaseData.buyerEmail = buyerEmail;
+
       const food = await foodCollection.findOne({ _id: foodId });
 
       if (food?.addBy?.email === purchaseData.buyerEmail) {
@@ -236,8 +240,21 @@ async function run() {
     });
 
     // delete food data my orders
-    app.delete("/addPurchase/:id", async (req, res) => {
-      const id = req.params.id;
+    app.delete("/addPurchase/:id", verifyToken, async (req, res) => {
+      const id = req?.params?.id;
+      const userEmail = req?.user?.email;
+
+      const purchase = await purchaseCollection.findOne({
+        _id: new ObjectId(id),
+      });
+
+      // Ensure the user deleting the purchase is the buyer
+      if (purchase.buyerEmail !== userEmail) {
+        return res.status(403).send({
+          success: false,
+          message: "Forbidden: You are not authorized to delete this order.",
+        });
+      }
 
       const result = await purchaseCollection.deleteOne({
         _id: new ObjectId(id),
