@@ -1,4 +1,4 @@
-const express = require("express");
+const express = require ("express");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
@@ -11,7 +11,11 @@ const app = express();
 app.use(express.json());
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:5174", "https://melodic-crumble-4e3302.netlify.app"],
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "https://cute-kulfi-0cc763.netlify.app",
+    ],
     credentials: true,
   })
 );
@@ -59,8 +63,8 @@ async function run() {
       res
         .cookie("token", token, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite:  process.env.NODE_ENV === 'production' ? 'none' : 'strict'
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
         })
         .send({ success: true });
     });
@@ -70,8 +74,8 @@ async function run() {
       res
         .clearCookie("token", {
           httpOnly: true,
-          secure:  process.env.NODE_ENV === 'production',
-           sameSite:  process.env.NODE_ENV === 'production' ? 'none' : 'strict'
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
         })
         .send({ success: true });
     });
