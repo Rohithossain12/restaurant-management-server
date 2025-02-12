@@ -14,4 +14,4 @@ Welcome to our Food Restaurant Management Website db, your all-in-one solution f
 
 
 ## Live Link: (client).
-## https://melodic-crumble-4e3302.netlify.app/
+## https://masterchefr.netlify.app
