@@ -1,4 +1,4 @@
-const express = require ("express");
+const express = require("express");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
@@ -14,7 +14,7 @@ app.use(
     origin: [
       "http://localhost:5173",
       "http://localhost:5174",
-      "https://cute-kulfi-0cc763.netlify.app",
+      "https://masterchefr.netlify.app",
     ],
     credentials: true,
   })
@@ -180,7 +180,7 @@ async function run() {
       }
     });
 
-    // get all foods
+    // get all foodsnode
     app.get("/allFood", async (req, res) => {
       const search = req?.query?.search || "";
       const query = search.trim()
